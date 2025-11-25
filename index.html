@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Flappy UFO - Ultimate AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0a0a12;
+            --panel-color: #151520;
+            --accent: #00f3ff;
+            --success: #2ecc71;
+            --danger: #ff0055;
+            --warning: #f1c40f;
+            --text: #e0e0e0;
+        }
+        
+        /* --- SCROLLBAR DARK THEME --- */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent; /* Mobile fix */
+        }
+        
+        /* --- SIDEBAR --- */
+        #sidebar {
+            width: 340px;
+            background: var(--panel-color);
+            border-right: 1px solid #333;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            z-index: 20;
+            overflow-y: auto;
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Mobile Sidebar Logic */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: absolute;
+                top: 0; left: 0; bottom: 0;
+                transform: translateX(-100%);
+            }
+            #sidebar.open {
+                transform: translateX(0);
+            }
+        }
+        
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            color: var(--accent);
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Groupes de contrôles */
+        .control-section {
+            background: rgba(255,255,255,0.03);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 10px;
+            display: block;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 4px;
+        }
+        
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+        }
+        .control-val { color: var(--accent); font-family: monospace; }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+            margin-top: 5px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--text);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { background: var(--accent); }
+
+        /* Checkbox Style */
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 16px; height: 16px;
+            cursor: pointer;
+        }
+
+        /* Boutons */
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn {
+            flex: 1;
+            padding: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            background: #333;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn:hover { background: #444; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        
+        .btn-sm { padding: 5px; font-size: 0.65rem; min-width: 40px; flex: 0; }
+        
+        .btn-primary { background: linear-gradient(45deg, var(--accent), #0099ff); color: #000; }
+        .btn-danger { background: linear-gradient(45deg, var(--danger), #990033); }
+        .btn-success { background: linear-gradient(45deg, var(--success), #27ae60); color: #000; }
+        .btn-play { background: linear-gradient(45deg, var(--warning), #e67e22); color: #000; }
+
+        /* Indicateur Neural (LED) */
+        .neural-activity {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #333;
+            margin-bottom: 10px;
+        }
+        .led-label { font-size: 0.8rem; color: #888; }
+        .led {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background-color: #330000;
+            box-shadow: inset 0 0 5px #000;
+            transition: background-color 0.05s;
+            border: 2px solid #555;
+        }
+        .led.active {
+            background-color: #00ff00;
+            box-shadow: 0 0 15px #00ff00, inset 0 0 5px #fff;
+            border-color: #fff;
+        }
+        .led.inactive {
+            background-color: #550000;
+            box-shadow: 0 0 5px #ff0000;
+            border-color: #880000;
+        }
+
+        /* Game Area */
+        #game-container {
+            flex: 1;
+            position: relative;
+            background-color: #000;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 20px; left: 20px;
+            font-family: 'Orbitron', sans-serif;
+            pointer-events: none;
+            text-shadow: 2px 2px 0 #000;
+            z-index: 5;
+        }
+        .score-big { font-size: 3rem; color: var(--accent); font-weight: 700; }
+        .mode-badge {
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        /* Graph */
+        #chart-wrapper {
+            height: 200px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .chart-controls label { font-size: 0.65rem; color: #888; }
+
+        /* File Input caché */
+        #file-input { display: none; }
+        
+        /* Mobile Toggle Button */
+        #mobile-toggle-btn {
+            position: absolute;
+            top: 15px; right: 15px;
+            z-index: 30;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: none;
+        }
+        
+        /* Start Screen Overlay */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            cursor: pointer;
+        }
+        .start-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px var(--accent);
+            text-align: center;
+        }
+        .start-hint {
+            font-size: 1rem;
+            color: #fff;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.5; transform: scale(0.95); }
+        }
+
+        @media (max-width: 768px) {
+            #mobile-toggle-btn { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Mobile Sidebar Toggle -->
+<button id="mobile-toggle-btn" onclick="game.toggleSidebar()">
+    <i class="fas fa-bars"></i>
+</button>
+
+<div id="sidebar">
+    <h1><i class="fas fa-flying-saucer"></i> FLAPPY UFO</h1>
+    
+    <!-- Indicateur Action -->
+    <div class="neural-activity">
+        <span class="led-label">NEURAL OUTPUT</span>
+        <div id="jump-led" class="led inactive"></div>
+    </div>
+
+    <div class="control-section">
+        <span class="section-title">Mode de Jeu</span>
+        <div class="btn-group">
+            <button class="btn btn-play" id="btn-play-mode" onclick="game.togglePlayMode()">
+                <i class="fas fa-gamepad"></i> Jouer
+            </button>
+            <button class="btn" onclick="game.togglePause()" id="btn-pause">
+                <i class="fas fa-pause"></i> Pause
+            </button>
+        </div>
+    </div>
+    
+    <div class="control-section">
+        <span class="section-title">Affichage</span>
+        <label class="checkbox-row">
+            <input type="checkbox" id="show-lines" checked onchange="game.toggleDebugLines(this.checked)">
+            <span>Afficher Lignes Entraînement</span>
+        </label>
+    </div>
+
+    <div class="control-section">
+        <span class="section-title">Level Design</span>
+        <label class="checkbox-row">
+            <input type="checkbox" id="robust-mode" onchange="game.toggleRobustMode(this.checked)">
+            <span>Entraînement Robuste (Random)</span>
+        </label>
+        
+        <div class="control-row">
+            <span>Gravité</span> <span class="control-val" id="grav-val">0.20</span>
+        </div>
+        <input type="range" id="slider-gravity" min="0.05" max="0.5" step="0.01" value="0.20" oninput="game.updatePhysics('gravity', this.value)">
+
+        <div class="control-row">
+            <span>Force Saut</span> <span class="control-val" id="jump-val">-4.5</span>
+        </div>
+        <input type="range" min="-10" max="-1" step="0.1" value="-4.5" oninput="game.updatePhysics('jumpForce', this.value)">
+
+        <div class="control-row">
+            <span>Ouverture Tuyau</span> <span class="control-val" id="gap-val">200</span>
+        </div>
+        <input type="range" id="slider-gap" min="100" max="350" step="10" value="200" oninput="game.updatePhysics('pipeGap', this.value)">
+
+        <div class="control-row">
+            <span>Distance Tuyaux</span> <span class="control-val" id="dist-val">400</span>
+        </div>
+        <input type="range" id="slider-dist" min="200" max="600" step="20" value="400" oninput="game.updatePhysics('pipeSpawnRate', this.value)">
+    </div>
+
+    <div class="control-section">
+        <span class="section-title">Hyperparamètres IA</span>
+        
+        <div class="control-row">
+            <span>Exploration (ε)</span> <span class="control-val" id="eps-val">0.0</span>
+        </div>
+        <input type="range" min="0" max="0.5" step="0.01" value="0.0" oninput="game.updateAI('epsilon', this.value)">
+
+        <div class="control-row">
+            <span>Alpha (α)</span> <span class="control-val" id="alpha-val">0.7</span>
+        </div>
+        <input type="range" min="0.1" max="1.0" step="0.1" value="0.7" oninput="game.updateAI('alpha', this.value)">
+
+        <div class="control-row">
+            <span>Gamma (γ)</span> <span class="control-val" id="gamma-val">0.9</span>
+        </div>
+        <input type="range" min="0.1" max="0.99" step="0.01" value="0.9" oninput="game.updateAI('gamma', this.value)">
+    </div>
+
+    <div class="control-section">
+        <span class="section-title">Simulation & Vitesse</span>
+        <div class="control-row">
+            <span>Vitesse</span> <span class="control-val" id="speed-val">x1</span>
+        </div>
+        <input type="range" id="speed-slider" min="1" max="1000" step="10" value="1" oninput="game.setSpeed(this.value)">
+        
+        <div class="btn-group" style="margin-top: 8px;">
+            <button class="btn btn-sm" onclick="game.setSpeed(1)">x1</button>
+            <button class="btn btn-sm" onclick="game.setSpeed(50)">x50</button>
+            <button class="btn btn-sm" onclick="game.setSpeed(200)">x200</button>
+            <button class="btn btn-sm" onclick="game.setSpeed(1000)">x1000</button>
+        </div>
+    </div>
+
+    <div class="control-section">
+        <span class="section-title">Mémoire (Q-Table)</span>
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="game.exportBrain()">
+                <i class="fas fa-download"></i> Exp.
+            </button>
+            <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                <i class="fas fa-upload"></i> Imp.
+            </button>
+            <button class="btn btn-danger" onclick="game.hardReset()">
+                <i class="fas fa-trash"></i> Reset
+            </button>
+        </div>
+        <input type="file" id="file-input" accept=".json" onchange="game.importBrain(this)">
+    </div>
+
+    <div id="chart-wrapper">
+        <div class="chart-controls">
+            <div style="flex:1">
+                <label>Zoom</label>
+                <input type="range" min="10" max="500" value="50" oninput="game.chartZoom = parseInt(this.value); game.updateChart()">
+            </div>
+            <div style="flex:1">
+                <label>Lissage</label>
+                <input type="range" min="1" max="20" value="1" oninput="game.chartSmooth = parseInt(this.value); game.updateChart()">
+            </div>
+        </div>
+        <canvas id="chart"></canvas>
+    </div>
+</div>
+
+<div id="game-container" onmousedown="game.handleInteraction()" ontouchstart="game.handleInteraction()">
+    <!-- Start Screen Overlay -->
+    <div id="start-screen">
+        <div class="start-title">FLAPPY UFO<br>AI TRAINING</div>
+        <div class="start-hint"><i class="fas fa-fingerprint"></i> CLIQUER POUR DÉMARRER</div>
+    </div>
+
+    <div id="hud">
+        <div id="mode-badge" class="mode-badge">MODE: IA AUTO</div>
+        <div class="hud-item score-big" id="score">0</div>
+        <div class="hud-item">Record: <span id="high-score" style="color:var(--success)">0</span></div>
+        <div class="hud-item">Génération: <span id="generation">1</span></div>
+    </div>
+    <canvas id="canvas"></canvas>
+</div>
+
+<script>
+// --- MOTEUR PHYSIQUE ---
+const Physics = {
+    gravity: 0.20,
+    jumpForce: -4.5,
+    speed: 2,
+    pipeGap: 200,
+    pipeSpawnRate: 400, 
+    ufoSize: 15
+};
+
+class UFO {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.velocity = 0;
+        this.alive = true;
+        this.rotation = 0;
+        this.lightTimer = 0;
+    }
+
+    flap() {
+        this.velocity = Physics.jumpForce;
+    }
+
+    update() {
+        if (!this.alive) return;
+        this.velocity += Physics.gravity;
+        this.y += this.velocity;
+        this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
+
+        if (this.y + Physics.ufoSize >= game.height || this.y - Physics.ufoSize <= 0) {
+            this.alive = false;
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+
+        // Dôme
+        ctx.fillStyle = 'rgba(0, 243, 255, 0.6)';
+        ctx.beginPath(); ctx.arc(0, -5, 10, Math.PI, 0); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1; ctx.stroke();
+
+        // Corps
+        ctx.fillStyle = '#7f8c8d';
+        ctx.beginPath(); ctx.ellipse(0, 0, 20, 8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#bdc3c7';
+        ctx.beginPath(); ctx.ellipse(0, -2, 15, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Lumières
+        this.lightTimer += 0.2;
+        for(let i=0; i<5; i++) {
+            const angle = (i / 5) * Math.PI * 2 + this.lightTimer;
+            const lx = Math.cos(angle) * 16;
+            const ly = Math.sin(angle) * 4;
+            const hue = (this.lightTimer * 50 + i * 70) % 360;
+            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+            ctx.beginPath(); ctx.arc(lx, ly, 2, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+class Pipe {
+    constructor(x, gapY, w) {
+        this.x = x;
+        this.gapY = gapY;
+        this.w = w || 70;
+        this.passed = false;
+        this.localGap = Physics.pipeGap; 
+    }
+
+    update() { this.x -= Physics.speed; }
+
+    draw(ctx) {
+        const topH = this.gapY - this.localGap / 2;
+        const botY = this.gapY + this.localGap / 2;
+        
+        ctx.fillStyle = '#2ecc71'; ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 3;
+
+        // Haut
+        ctx.fillRect(this.x, 0, this.w, topH);
+        ctx.strokeRect(this.x, 0, this.w, topH);
+        ctx.fillRect(this.x - 4, topH - 20, this.w + 8, 20);
+        ctx.strokeRect(this.x - 4, topH - 20, this.w + 8, 20);
+
+        // Bas
+        ctx.fillRect(this.x, botY, this.w, game.height - botY);
+        ctx.strokeRect(this.x, botY, this.w, game.height - botY);
+        ctx.fillRect(this.x - 4, botY, this.w + 8, 20);
+        ctx.strokeRect(this.x - 4, botY, this.w + 8, 20);
+        
+        // Point cible (si activé)
+        if (game.config.showDebug) {
+            ctx.fillStyle = '#ff0055';
+            ctx.beginPath(); ctx.arc(this.x + this.w/2, this.gapY, 6, 0, Math.PI*2); ctx.fill();
+        }
+    }
+    
+    checkCollision(ufo) {
+        const left = ufo.x - Physics.ufoSize + 5;
+        const right = ufo.x + Physics.ufoSize - 5;
+        const top = ufo.y - Physics.ufoSize + 5;
+        const bottom = ufo.y + Physics.ufoSize - 5;
+        const pLeft = this.x;
+        const pRight = this.x + this.w;
+        const gapTop = this.gapY - this.localGap / 2;
+        const gapBot = this.gapY + this.localGap / 2;
+
+        if (right > pLeft && left < pRight) {
+            if (top < gapTop || bottom > gapBot) return true;
+        }
+        return false;
+    }
+}
+
+// --- IA ---
+class Brain {
+    constructor() {
+        this.qTable = {};
+        this.epsilon = 0.0;
+        this.alpha = 0.7;
+        this.gamma = 0.9;
+    }
+
+    getState(dx, dy, vel) {
+        const binDx = Math.floor(dx / 40);
+        const binDy = Math.floor(dy / 40);
+        const binVel = Math.floor(vel / 4);
+        return `${binDx},${binDy},${binVel}`;
+    }
+
+    act(state) {
+        if (Math.random() < this.epsilon) return Math.floor(Math.random() * 2);
+        if (!this.qTable[state]) this.qTable[state] = [0, 0];
+        return this.qTable[state][1] > this.qTable[state][0] ? 1 : 0;
+    }
+
+    learn(prev, act, rew, next) {
+        if (!this.qTable[prev]) this.qTable[prev] = [0, 0];
+        if (!this.qTable[next]) this.qTable[next] = [0, 0];
+        const oldQ = this.qTable[prev][act];
+        const maxNext = Math.max(...this.qTable[next]);
+        this.qTable[prev][act] = oldQ + this.alpha * (rew + this.gamma * maxNext - oldQ);
+    }
+}
+
+const game = {
+    canvas: null, ctx: null,
+    width: 0, height: 0,
+    ufo: null, pipes: [], ai: new Brain(),
+    
+    frameCount: 0, score: 0, highScore: 0, generation: 1,
+    scoresHistory: [],
+    
+    speedMultiplier: 1, running: true, started: false,
+    userPlaying: false, userJumpReq: false,
+    robustMode: false, 
+    
+    stars: [], lastPipeY: 0,
+    nextPipeDistanceCounter: 0, 
+    
+    chartZoom: 50,
+    chartSmooth: 1,
+    
+    config: {
+        showDebug: true
+    },
+
+    init() {
+        this.canvas = document.getElementById('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        window.addEventListener('keydown', (e) => {
+            if(e.code === 'Space') this.handleInteraction();
+        });
+        
+        for(let i=0; i<100; i++) {
+            this.stars.push({
+                x: Math.random() * this.width,
+                y: Math.random() * this.height,
+                size: Math.random() * 2,
+                speed: Math.random() * 0.5 + 0.1
+            });
+        }
+
+        this.initChart();
+        this.resetGame();
+        this.loop();
+    },
+
+    resize() {
+        this.canvas.width = this.canvas.parentElement.clientWidth;
+        this.canvas.height = this.canvas.parentElement.clientHeight;
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
+        this.lastPipeY = this.height / 2;
+    },
+
+    // --- INTERACTION & START ---
+    handleInteraction() {
+        if (!this.started) {
+            this.startGame();
+            return;
+        }
+        if (this.userPlaying) {
+            this.userJumpReq = true;
+        }
+    },
+
+    startGame() {
+        this.started = true;
+        document.getElementById('start-screen').style.display = 'none';
+    },
+
+    // --- LOGIQUE DU JEU ---
+    step() {
+        if (!this.ufo.alive) return;
+
+        this.nextPipeDistanceCounter -= Physics.speed;
+        if (this.nextPipeDistanceCounter <= 0) {
+            this.nextPipeDistanceCounter = Physics.pipeSpawnRate;
+
+            const padding = 80; 
+            const maxDiff = 150;
+            let min = Math.max(padding + Physics.pipeGap/2, this.lastPipeY - maxDiff);
+            let max = Math.min(this.height - padding - Physics.pipeGap/2, this.lastPipeY + maxDiff);
+            if (min > max) { min = padding + Physics.pipeGap/2; max = this.height - padding - Physics.pipeGap/2; }
+            
+            const y = Math.random() * (max - min) + min;
+            this.lastPipeY = y;
+            this.pipes.push(new Pipe(this.width + 50, y));
+        }
+
+        let nextPipe = this.pipes.find(p => p.x + p.w > this.ufo.x - Physics.ufoSize);
+        let dx = nextPipe ? nextPipe.x - this.ufo.x : 400;
+        let dy = nextPipe ? nextPipe.gapY - this.ufo.y : 0;
+        
+        const currentState = this.ai.getState(dx, dy, this.ufo.velocity);
+        let action = 0;
+
+        if (this.userPlaying) {
+            if (this.userJumpReq) { action = 1; this.userJumpReq = false; }
+        } else {
+            action = this.ai.act(currentState);
+        }
+
+        // MAJ LED (uniquement si on n'est pas en vitesse extrême)
+        if (this.speedMultiplier < 10) {
+            const led = document.getElementById('jump-led');
+            if (action === 1) led.className = 'led active';
+            else led.className = 'led inactive';
+        }
+
+        if (action === 1) this.ufo.flap();
+        this.ufo.update();
+        
+        for (let i = this.pipes.length - 1; i >= 0; i--) {
+            let p = this.pipes[i];
+            p.update();
+
+            if (p.checkCollision(this.ufo)) {
+                this.ufo.alive = false;
+                if (!this.userPlaying) this.ai.learn(currentState, action, -1000, this.ai.getState(0,0,0));
+                this.die();
+                return;
+            }
+
+            if (!p.passed && p.x + p.w < this.ufo.x) {
+                this.score++;
+                p.passed = true;
+                if (!this.userPlaying) this.ai.learn(currentState, action, 100, this.ai.getState(dx, dy, this.ufo.velocity));
+            }
+            
+            if (p.x + p.w < 0) this.pipes.splice(i, 1);
+        }
+
+        if (!this.ufo.alive) {
+            if (!this.userPlaying) this.ai.learn(currentState, action, -1000, this.ai.getState(0,0,0));
+            this.die();
+            return;
+        }
+
+        if (!this.userPlaying) {
+            const nextDx = nextPipe ? nextPipe.x - this.ufo.x : 400;
+            const nextDy = nextPipe ? nextPipe.gapY - this.ufo.y : 0;
+            const nextState = this.ai.getState(nextDx, nextDy, this.ufo.velocity);
+            const distToCenter = Math.abs(dy);
+            const penalty = Math.min(distToCenter / 250, 1.0);
+            const precisionReward = (1.0 - penalty) * 2.0 + 0.1;
+            this.ai.learn(currentState, action, precisionReward, nextState);
+        }
+
+        this.frameCount++;
+    },
+
+    resetGame() {
+        if (this.robustMode && !this.userPlaying) {
+            const newGrav = (Math.random() * 0.25 + 0.15).toFixed(2);
+            this.updatePhysics('gravity', newGrav);
+            document.getElementById('slider-gravity').value = newGrav;
+
+            const newGap = Math.floor(Math.random() * 100 + 150);
+            this.updatePhysics('pipeGap', newGap);
+            document.getElementById('slider-gap').value = newGap;
+
+            const newDist = Math.floor(Math.random() * 200 + 300);
+            this.updatePhysics('pipeSpawnRate', newDist);
+            document.getElementById('slider-dist').value = newDist;
+        }
+
+        this.ufo = new UFO(100, this.height / 2);
+        this.pipes = [];
+        this.score = 0;
+        this.frameCount = 0;
+        this.lastPipeY = this.height / 2;
+        
+        this.pipes.push(new Pipe(this.width + 100, this.lastPipeY));
+        this.nextPipeDistanceCounter = Physics.pipeSpawnRate;
+        
+        // Pas d'update DOM ici, géré par updateUI()
+    },
+
+    die() {
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+        }
+        this.scoresHistory.push(this.score);
+        this.generation++;
+        this.resetGame();
+    },
+
+    // --- VISUEL ---
+    draw() {
+        const ctx = this.ctx;
+        ctx.fillStyle = '#0a0a12'; ctx.fillRect(0, 0, this.width, this.height);
+
+        ctx.fillStyle = '#fff';
+        for(let s of this.stars) {
+            s.x -= s.speed * (this.speedMultiplier > 5 ? 5 : 1);
+            if(s.x < 0) s.x = this.width;
+            ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); ctx.fill();
+        }
+
+        for (let p of this.pipes) p.draw(ctx);
+        this.ufo.draw(ctx);
+        
+        // Target Line (Debug)
+        if (this.config.showDebug && !this.userPlaying) {
+            let nextPipe = this.pipes.find(p => p.x + p.w > this.ufo.x - Physics.ufoSize);
+            if(nextPipe) {
+                const dist = Math.abs(nextPipe.gapY - this.ufo.y);
+                const r = Math.min(255, dist * 2);
+                const g = Math.max(0, 255 - dist * 2);
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(${r}, ${g}, 100, 0.5)`;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(this.ufo.x, this.ufo.y);
+                ctx.lineTo(nextPipe.x + nextPipe.w/2, nextPipe.gapY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+    },
+
+    updateUI() {
+        document.getElementById('score').innerText = this.score;
+        document.getElementById('high-score').innerText = this.highScore;
+        document.getElementById('generation').innerText = this.generation;
+        this.updateChart();
+    },
+
+    loop() {
+        requestAnimationFrame(() => this.loop());
+        if (this.running && this.started) {
+            for (let i = 0; i < this.speedMultiplier; i++) this.step();
+        }
+        this.draw();
+        // Mise à jour de l'UI une seule fois par frame pour éviter le lag à x1000
+        if(this.started) this.updateUI(); 
+    },
+
+    // --- SIDEBAR & UX ---
+    toggleSidebar() {
+        const sb = document.getElementById('sidebar');
+        sb.classList.toggle('open');
+    },
+    
+    toggleDebugLines(val) {
+        this.config.showDebug = val;
+    },
+    
+    togglePlayMode() {
+        this.userPlaying = !this.userPlaying;
+        this.resetGame();
+        const btn = document.getElementById('btn-play-mode');
+        const badge = document.getElementById('mode-badge');
+        if (this.userPlaying) {
+            btn.innerHTML = '<i class="fas fa-robot"></i> Mode IA';
+            badge.innerText = "MODE: JOUEUR HUMAIN";
+            badge.style.color = "var(--warning)";
+            badge.style.borderColor = "var(--warning)";
+            this.setSpeed(1);
+            document.getElementById('speed-slider').value = 1;
+            document.getElementById('speed-val').innerText = 'x1';
+        } else {
+            btn.innerHTML = '<i class="fas fa-gamepad"></i> Jouer';
+            badge.innerText = "MODE: IA AUTO";
+            badge.style.color = "var(--accent)";
+            badge.style.borderColor = "var(--accent)";
+        }
+    },
+
+    toggleRobustMode(val) { this.robustMode = val; },
+
+    updateAI(name, val) {
+        this.ai[name] = parseFloat(val);
+        if(name==='epsilon') document.getElementById('eps-val').innerText = val;
+        if(name==='alpha') document.getElementById('alpha-val').innerText = val;
+        if(name==='gamma') document.getElementById('gamma-val').innerText = val;
+    },
+
+    updatePhysics(name, val) {
+        Physics[name] = parseFloat(val);
+        if(name==='gravity') document.getElementById('grav-val').innerText = val;
+        if(name==='pipeGap') document.getElementById('gap-val').innerText = val;
+        if(name==='pipeSpawnRate') document.getElementById('dist-val').innerText = val;
+        if(name==='speed') document.getElementById('scroll-speed-val').innerText = val;
+        if(name==='jumpForce') document.getElementById('jump-val').innerText = val;
+    },
+
+    setSpeed(val) {
+        this.speedMultiplier = parseInt(val);
+        document.getElementById('speed-val').innerText = 'x' + val;
+        document.getElementById('speed-slider').value = val;
+    },
+    togglePause() { this.running = !this.running; },
+    
+    hardReset() {
+        this.ai.qTable = {};
+        this.generation = 1; this.highScore = 0; this.scoresHistory = [];
+        this.resetGame();
+    },
+
+    exportBrain() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.ai.qTable));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "flappy_brain.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    },
+
+    importBrain(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                this.ai.qTable = JSON.parse(e.target.result);
+                alert("Cerveau importé avec succès !");
+            } catch(err) {
+                alert("Erreur fichier invalide");
+            }
+        };
+        reader.readAsText(file);
+    },
+
+    initChart() {
+        const ctx = document.getElementById('chart').getContext('2d');
+        this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Score',
+                    data: [],
+                    borderColor: '#00f3ff',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.4,
+                    backgroundColor: 'rgba(0, 243, 255, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: { grid: { color: 'rgba(255,255,255,0.1)' }, beginAtZero: true }
+                },
+                animation: false
+            }
+        });
+    },
+
+    updateChart() {
+        let displayData = [];
+        let rawData = this.scoresHistory;
+        
+        if (this.chartSmooth > 1 && rawData.length > 0) {
+            for (let i = 0; i < rawData.length; i++) {
+                let sum = 0;
+                let count = 0;
+                for (let j = 0; j < this.chartSmooth; j++) {
+                    if (i - j >= 0) {
+                        sum += rawData[i - j];
+                        count++;
+                    }
+                }
+                displayData.push(sum / count);
+            }
+        } else {
+            displayData = rawData;
+        }
+
+        let labels = [];
+        let slicedData = [];
+        const start = Math.max(0, displayData.length - this.chartZoom);
+        
+        for(let i=start; i<displayData.length; i++) {
+            slicedData.push(displayData[i]);
+            labels.push(i);
+        }
+
+        this.chart.data.labels = labels;
+        this.chart.data.datasets[0].data = slicedData;
+        this.chart.update();
+    }
+};
+
+window.onload = () => { game.init(); };
+</script>
+</body>
+</html>
