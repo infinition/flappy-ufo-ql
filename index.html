@@ -229,6 +229,12 @@
             font-size: 0.8rem;
             margin-bottom: 10px;
             display: inline-block;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.1s;
+        }
+        .mode-badge:active {
+            transform: scale(0.95);
         }
 
         /* Graph */
@@ -441,7 +447,7 @@
     </div>
 
     <div id="hud">
-        <div id="mode-badge" class="mode-badge">MODE: IA AUTO</div>
+        <div id="mode-badge" class="mode-badge" onclick="event.stopPropagation(); game.togglePlayMode()">MODE: IA AUTO</div>
         <div class="hud-item score-big" id="score">0</div>
         <div class="hud-item">Record: <span id="high-score" style="color:var(--success)">0</span></div>
         <div class="hud-item">Génération: <span id="generation">1</span></div>
@@ -608,6 +614,7 @@ const game = {
     scoresHistory: [],
     
     speedMultiplier: 1, running: true, started: false,
+    savedSpeed: 1, // Mémoire pour restaurer la vitesse après le mode joueur
     userPlaying: false, userJumpReq: false,
     robustMode: false, 
     
@@ -724,6 +731,7 @@ const game = {
             if (!p.passed && p.x + p.w < this.ufo.x) {
                 this.score++;
                 p.passed = true;
+                // Pas d'update DOM dans la boucle rapide
                 if (!this.userPlaying) this.ai.learn(currentState, action, 100, this.ai.getState(dx, dy, this.ufo.velocity));
             }
             
@@ -848,22 +856,32 @@ const game = {
     
     togglePlayMode() {
         this.userPlaying = !this.userPlaying;
-        this.resetGame();
+        // Suppression de this.resetGame() pour continuité immédiate
+        
         const btn = document.getElementById('btn-play-mode');
         const badge = document.getElementById('mode-badge');
+        
         if (this.userPlaying) {
+            // Activation Mode Joueur
             btn.innerHTML = '<i class="fas fa-robot"></i> Mode IA';
             badge.innerText = "MODE: JOUEUR HUMAIN";
             badge.style.color = "var(--warning)";
             badge.style.borderColor = "var(--warning)";
+            
+            // On sauvegarde la vitesse actuelle (ex: x50) et on met x1 pour jouer
+            this.savedSpeed = this.speedMultiplier;
             this.setSpeed(1);
-            document.getElementById('speed-slider').value = 1;
-            document.getElementById('speed-val').innerText = 'x1';
         } else {
+            // Activation Mode IA
             btn.innerHTML = '<i class="fas fa-gamepad"></i> Jouer';
             badge.innerText = "MODE: IA AUTO";
             badge.style.color = "var(--accent)";
             badge.style.borderColor = "var(--accent)";
+            
+            // On restaure la vitesse d'entraînement si elle était élevée
+            if (this.savedSpeed > 1) {
+                this.setSpeed(this.savedSpeed);
+            }
         }
     },
 
