@@ -14,6 +14,7 @@ Watch the  **AI agent** learn to navigate the environments using the Q-Learning 
 Experience the trainer instantly: **[Flappy UFO - Ultimate AI](https://infinition.github.io/Flappy-UFO-AI/)**
 
 -----
+<img width="1158" height="1279" alt="image" src="https://github.com/user-attachments/assets/1af40a42-0cbd-4c58-a49c-7a5cfb3b048c" />
 
 ## 🚀 Key Features & Performance
 
