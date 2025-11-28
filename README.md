@@ -1,4 +1,5 @@
 # FLAPPY UFO: Deep-Dive Q-Learning Trainer
+![image](https://github.com/user-attachments/assets/307b72e2-e8af-4e86-b618-25c633ffb514)
 
 ![Version](https://img.shields.io/badge/Status-RL_Trainer-00f3ff?style=for-the-badge)
 ![Tech](https://img.shields.io/badge/Tech-Canvas%20%7C%20Vanilla_JS-2ecc71?style=for-the-badge)
