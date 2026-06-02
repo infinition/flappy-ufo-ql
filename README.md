@@ -1,64 +1,64 @@
-# FLAPPY UFO: Deep-Dive Q-Learning Trainer
-![image](https://github.com/user-attachments/assets/307b72e2-e8af-4e86-b618-25c633ffb514)
+# Flappy UFO: Q-Learning Trainer
 
-![Version](https://img.shields.io/badge/Status-RL_Trainer-00f3ff?style=for-the-badge)
-![Tech](https://img.shields.io/badge/Tech-Canvas%20%7C%20Vanilla_JS-2ecc71?style=for-the-badge)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) [![Release](https://img.shields.io/github/v/release/infinition/flappy-ufo-ql?style=flat)](https://github.com/infinition/flappy-ufo-ql/releases) [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/infinition)
 
+A browser-based Q-Learning visualizer built around a Flappy Bird variant. Watch an agent learn to fly through pipes, tune hyperparameters live, and run thousands of episodes in seconds with the speed multiplier.
 
-**A high-performance, zero-dependency visualization of Reinforcement Learning running entirely in your browser.**
+Live: https://infinition.github.io/flappy-ufo-ql/
 
-Watch the  **AI agent** learn to navigate the environments using the Q-Learning algorithm. customize the world, tweak the hyperparameters on the fly, and hit **Turbo Mode** to train thousands of episodes in seconds.
+![Flappy UFO](https://github.com/user-attachments/assets/307b72e2-e8af-4e86-b618-25c633ffb514)
 
------
+<img width="1158" height="1279" alt="Flappy UFO trainer" src="https://github.com/user-attachments/assets/1af40a42-0cbd-4c58-a49c-7a5cfb3b048c" />
 
-### 🌐 Live Demo
-Experience the trainer instantly: https://infinition.github.io/flappy-ufo-ql/
+---
 
------
-<img width="1158" height="1279" alt="image" src="https://github.com/user-attachments/assets/1af40a42-0cbd-4c58-a49c-7a5cfb3b048c" />
+## How it works
 
-## 🚀 Key Features & Performance
+The agent receives a discretized state: horizontal distance to the next pipe, vertical distance to the gap center, and current velocity. It picks actions from a Q-table updated via the standard Q-Learning rule with configurable epsilon, alpha, and gamma.
 
-  * **High-Speed Training:** The **Speed Multiplier** lets you run the simulation up to **x1000** by decoupling the logic loop from rendering, ensuring maximum simulation speed for rapid iteration.
-  * **Real-time Tuning:** Adjust the core Q-Learning parameters ($\epsilon, \alpha, \gamma$) instantly.
-  * **Physics Modulator:** Change **Gravity**, **Jump Force**, and pipe parameters on the fly to challenge the agent with new environmental rules.
-  * **Robust Mode:** Toggle randomized physics settings upon each reset to force the AI to learn a generalized, robust policy.
-  * **Persistent Learning:** **Export/Import** the entire Q-Table (`flappy_brain.json`) to save and share trained models.
+The speed multiplier decouples the logic loop from rendering, allowing up to x1000 speed for fast policy convergence without freezing the UI.
 
------
+---
 
-## 🧠 Q-Learning Parameters & Feedback
+## Features
 
-The simulator uses a discretized state representation for Q-Learning, where the state is based on: **Horizontal distance to the next pipe**, **Vertical distance to the gap center**, and **UFO's current velocity**.
+- Speed multiplier up to x1000 for rapid training.
+- Live tuning of epsilon, alpha, and gamma without restarting.
+- Physics modulator: adjust gravity, jump force, and pipe parameters mid-run.
+- Robust Mode: randomizes physics on each reset to force a more generalized policy.
+- Export and import the full Q-table as `flappy_brain.json`.
+- Generation chart with zoom and smoothing controls (Chart.js).
+- Human player mode (click or Space to control the UFO manually).
+- Neural output LED showing the agent's jump decision in real time.
 
-  * **Live Neural Feedback:** A visible **NEURAL OUTPUT LED** confirms the AI's "JUMP" action in real-time.
-  * **Visual Debugging:** Toggle lines to show the agent's current target calculation (distance to the pipe center).
-  * **Generational Charting:** Track the learning curve (Score per Generation) with controls for **Zoom** and **Smoothing** via the Chart.js graph.
+---
 
------
+## Running
 
-## 💻 Quick Start
+Single-file application. Download `index.html` and open it in any modern browser.
 
-**This project is a single-file application.**
+---
 
-1.  Download the `index.html` file.
-2.  Open it directly in any modern web browser.
-3.  Click the screen or press **Space** to start the simulation.
+## Stack
 
-### Game Modes
+- Vanilla JavaScript, HTML5 Canvas
+- Chart.js for live analytics
+- No dependencies, no build step
 
-| Mode | Control | Description |
-| :--- | :--- | :--- |
-| **AI Auto** | Set Speed \> x1 | The Q-Learning algorithm controls the UFO, updates its Q-Table, and trains itself. |
-| **Human Player** | Toggle Player Mode | You control the UFO (click/spacebar). AI training and learning stop while in this mode. |
+---
 
------
+## Star History
 
-## 🛠️ Tech Stack
+<a href="https://www.star-history.com/?repos=infinition%2Fflappy-ufo-ql&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=infinition/flappy-ufo-ql&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=infinition/flappy-ufo-ql&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=infinition/flappy-ufo-ql&type=date&legend=top-left" />
+ </picture>
+</a>
 
-  * **Single-File Architecture:** Everything (HTML/CSS/JS) is contained in one portable file.
-  * **HTML5 Canvas:** Used for efficient game rendering.
-  * **Vanilla JavaScript:** Core physics and Q-Learning logic is implemented without external libraries.
-  * **Chart.js:** Used for live analytic plotting.
+---
 
-**License:** MIT. Free to use and modify.
+## License
+
+MIT.
